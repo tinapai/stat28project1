@@ -98,9 +98,9 @@ table(medicareData$Urban, medicareData$regions)
 ```
 **Summaries** 
 
-In order of the median cost that patients pay, the cost of diagnoses rank as fractures (median 965) > COPD (median 963) > diabetes (median 859) > heart failure (median 793). However, fractures and COPD are close in their measures of central tendency; if you use the means instead, COPD patients pay more (1064) than fracture patients (1027).
+In order of the median cost that patients pay, the cost of treatments rank as fractures (median 965) > COPD (median 963) > diabetes (median 859) > heart failure (median 793). However, fractures and COPD are close in their measures of central tendency; if you use the means instead, COPD patients pay more (1064) than fracture patients (1027).
 
-The order that they pay in median in percentage is fractures (21.9%) > COPD (21.2%) > heart failure (18.1%) > diabetes (15.9%).
+The percentage that people pay for their treatments ordered from high to low is fractures (21.9%) > COPD (21.2%) > heart failure (18.1%) > diabetes (15.9%).
 
 **Plots**
 
@@ -136,6 +136,8 @@ ggplot(medicareData, aes(urbanByRegions, PctPatientPays, fill=urbanByRegions)) +
   facet_grid(.~DRG.Definition)
 
 ```
+
+**Boxplots**
 
 Some questions of interest that I would ask the graphs are that I want to know whether people pay different percentages of their healthcare if they live in different regions, and I also want to know if the treatments for a disease would also cost different amounts across regions.
 
@@ -271,7 +273,7 @@ for(diagnosis in diagnoses){
          resultsDF$ci.est[resultsDF$drg==diagnosis],
          ui=resultsDF$ci.upper[resultsDF$drg==diagnosis],
          li=resultsDF$ci.lower[resultsDF$drg==diagnosis],
-         main=paste("CI plots for", diagnosis),
+         main=paste("Confidence Intervals for", diagnosis),
          xlab="Urban Region Pairs", ylab="Difference", xaxt="n")
   abline(h = 0, lty = 2)
 }
@@ -289,7 +291,7 @@ for(diagnosis in diagnoses){
          resultsDFPct$ci.estPct[resultsDFPct$drgPct==diagnosis],
          ui=resultsDFPct$ci.upperPct[resultsDFPct$drgPct==diagnosis],
          li=resultsDFPct$ci.lowerPct[resultsDFPct$drgPct==diagnosis],
-         main=paste("CI plots for Percent Paid for", diagnosis), 
+         main=paste("Confidence Intervals for Percent Paid for", diagnosis), 
          xlab="Urban Region Pairs", ylab="Difference", xaxt="n")
   abline(h = 0, lty = 2)
 }
