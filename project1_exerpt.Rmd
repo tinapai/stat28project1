@@ -9,20 +9,20 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## 1. Intro
-You will be looking at a dataset from Centers for Medicare and Medicaid Services (https://www.cms.gov/research-statistics-data-and-systems/statistics-trends-and-reports/medicare-provider-charge-data/inpatient.html). Medicare is the US program that assists in covering the costs of health expenses for people who are 65 or older, as well as some younger people with disabilities. The dataset we will be using gives the cumulative charges for procedures billed to Medicare for more than 3,000 U.S. hospitals for Fiscal Year 2011 (Fiscal Year: the 12-month period ending on 30 September of that year, having begun on 1 October of the previous calendar year). The dataset is intended to help Medicare recipients to have a sense of the costs at
-different institutes or for different procedures (Medicare beneficiaries still will have remaining out-of-pocket costs after the federal government pays its portion).
+## 0. Intro
 
 The overarching goal of this project is to evaluate how the the amount a patient has to pay (i.e. after Medicare) change for different regions or urban/rural areas of the country.
 
-We will only use:
+We will be looking at a dataset from Centers for Medicare and Medicaid Services (https://www.cms.gov/research-statistics-data-and-systems/statistics-trends-and-reports/medicare-provider-charge-data/inpatient.html). Medicare is the US program that assists in covering the costs of health expenses for people who are 65 or older, as well as some younger people with disabilities. The dataset we will be using gives the cumulative charges for procedures billed to Medicare for more than 3,000 U.S. hospitals for Fiscal Year 2011 (Fiscal Year: the 12-month period ending on 30 September of that year, having begun on 1 October of the previous calendar year). The dataset is intended to help Medicare recipients to have a sense of the costs at different institutes or for different procedures (Medicare beneficiaries still will have remaining out-of-pocket costs after the federal government pays its portion).
+
+We will only look at the following diagnoses:
 
 * Chronic Obstructive Pulmonary Disease (COPD) This is an umbrella term used to describe progressive lung diseases, characterized by increasing breathlessness.
 * Heart failure
 * Hip/Pelvis fractures
 * Diabetes
 
-###1. Data
+##1. Data
 
 ```{r message=F}
 library(dplyr)
@@ -42,11 +42,16 @@ medicareData$DRG.Definition <- droplevels(medicareData$DRG.Definition)
 levels(medicareData$DRG.Definition) <- c("COPD", "heart failure", "fractures", "diabetes")
 
 #turn Urban into factor with labels
-medicareData$Urban <- factor(medicareData$Urban, levels=c(0, 1, 2, 3, 4, 5), labels=c("mixed", "only rural","rural and urban clusters","only urban clusters", "urban clusters and urban", "only urban")) 
+medicareData$Urban <- factor(medicareData$Urban, levels=c(0, 1, 2, 3, 4, 5),
+                             labels=c("mixed", "only rural","rural and urban clusters",
+                                      "only urban clusters", "urban clusters and urban",
+                                      "only urban")) 
 
 #make PatientPays and PctPatientPays
-medicareData$PatientPays <- medicareData$Average.Total.Payments - medicareData$Average.Medicare.Payments
-medicareData$PctPatientPays <- medicareData$PatientPays / medicareData$Average.Total.Payments
+medicareData$PatientPays <- medicareData$Average.Total.Payments -
+  medicareData$Average.Medicare.Payments
+medicareData$PctPatientPays <- medicareData$PatientPays /
+  medicareData$Average.Total.Payments
 
 #make urbanByRegions
 medicareData$urbanByRegions <- medicareData$Urban:medicareData$regions
@@ -58,11 +63,8 @@ summary(medicareData)
 ## 2. Basic Summaries
 ```{r}
 
-
 #basic summaries of PatientPays and PctPatientPays
-print("PatientPays")
 summary(medicareData$PatientPays)
-print("PctPatientPays")
 summary(medicareData$PctPatientPays)
 
 diagnoses <- c("COPD", "heart failure", "fractures", "diabetes")
@@ -82,16 +84,7 @@ medicareData <- medicareData %>%
   mutate(logPatientPays = log(PatientPays)) %>%
   mutate(logPctPatientPays = log(PctPatientPays))
 
-#Histograms of log-transformed payment, split by diagnosis
-ggplot(medicareData, aes(logPatientPays, col=DRG.Definition)) +
-  geom_histogram() +
-  facet_grid(.~DRG.Definition) +
-  labs(title="Histogram of Patient Payment")
-ggplot(medicareData, aes(logPctPatientPays, col=DRG.Definition)) +
-  geom_histogram() +
-  facet_grid(.~DRG.Definition) +
-  labs(title="Histogram of Percent Patient Payment")
-
+#Plot densities of log-transformed payments, by diagnosis
 ggplot(medicareData, aes(logPatientPays, col=DRG.Definition)) +
   geom_density() +
   labs(title="Density of Patient Payment")
@@ -102,26 +95,21 @@ ggplot(medicareData, aes(logPctPatientPays, col=DRG.Definition)) +
 #Cross-tabulation of Urban and regions
 table(medicareData$Urban, medicareData$regions)
 
-#Cross-tabulation by disease
-for(disease in diagnoses) {
-  print(disease)
-  print(table(medicareData$Urban[medicareData$DRG.Definition==disease],
-              medicareData$regions[medicareData$DRG.Definition==disease]))
-}
 ```
 **Summaries** 
-In order of the median cost that patients pay, the cost of diagnoses rank as fractures (median 965) > COPD (median 963) > diabetes (median 859) > heart failure (median 793). However, fractures and COPD are close in their measures of central tendency; if you use the means instead, COPD patients pay more (1064) than fracture patients (1027). For range of payment amounts, they order diabetes (268 - 10680) > heart failure (261 - 7009) > COPD (372 - 5701) > fractures (508 - 3694).
 
-The order that they pay in median in percentage is fractures (21.9%) > COPD (21.2%) > heart failure (18.1%) > diabetes (15.9%). Their dispersion is diabetes (4.2% - 74.2%) > heart failures (3.9% - 67%) > COPD (5.6% - 64.1%) > fractures (7.7% - 53.6%).
+In order of the median cost that patients pay, the cost of diagnoses rank as fractures (median 965) > COPD (median 963) > diabetes (median 859) > heart failure (median 793). However, fractures and COPD are close in their measures of central tendency; if you use the means instead, COPD patients pay more (1064) than fracture patients (1027).
 
-Interestingly, the dispersions of amounts and percentages rank the same order (diabetes > heart failure > copd  > fracture). But the other statistics don't match up like that. The amount and percentage statistics rank in different orders. The medians and ranges also rank in differing orders.
+The order that they pay in median in percentage is fractures (21.9%) > COPD (21.2%) > heart failure (18.1%) > diabetes (15.9%).
 
 **Plots**
+
 The data for `PatientPays` and `PctPatientPays` are very right-skewed, as we can tell from the histograms as well as from the fact that the means are much higher than the medians. It would be helpful to log-transform the data to make it more normal-looking. So, I log-transformed the data for better visualization.
 
 After plotting histograms, I thought it was hard to compare the four separate histograms, so I decided to also plot density plots. With this it's pretty easy to see that the fractures have least spread and that they're relatively more expensive for the patient. It's also easy to see that diabetes cost the least.
 
 **Cross-tabulation**
+
 In the cross-tabulation of Urban and regions, I can see that the data is very unbalanced. We have 1239 mixed areas in the south, and 0 areas with both urban clusters and urban places. There are very few observations in "only rural" and "only urban clusters", and there are none in "urban clusters and urban". This means that our `urbanByRegions` variable is going to be missing observations in those locations.
 
 ##3. Distributions
@@ -147,31 +135,13 @@ ggplot(medicareData, aes(urbanByRegions, PctPatientPays, fill=urbanByRegions)) +
   theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
   facet_grid(.~DRG.Definition)
 
-#Trying boxplots ordered by regionbyurban instead
-medicareData <- medicareData %>%
-  mutate(regionByUrban = regions:Urban) %>%
-  mutate(regionByUrban = droplevels(regionByUrban))
-#patientpays
-ggplot(medicareData, aes(regionByUrban, PatientPays, fill=regionByUrban)) +
-  geom_boxplot() + 
-  labs(title="Distributions of Patients' Payments by Region:Urban") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  ylim(c(500, 1500)) +
-  facet_grid(.~DRG.Definition)
-#pctpatientpays
-ggplot(medicareData, aes(regionByUrban, PctPatientPays, fill=regionByUrban)) +
-  geom_boxplot() + 
-  labs(title="Distributions of Patients' Payments (percentage) by Region:Urban") + 
-  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
-  facet_grid(.~DRG.Definition)
-  
 ```
 
 Some questions of interest that I would ask the graphs are that I want to know whether people pay different percentages of their healthcare if they live in different regions, and I also want to know if the treatments for a disease would also cost different amounts across regions.
 
-I'm plotting boxplots of the distributions of payment, grouped by `urbanByRegions`. Since that didn't give me any patterns that I found interesting, I thought maybe there would be more similarity within regions than there are within urban classifications. So I decided to make a new variable `regionByUrban` to see all the boxplots of the same region next to each other. I wondered if I would do better by plotting boxplots of the distributions grouped by `regionByUrban`. I think it turns out there's not much more pattern to it. 
+I'm plotting boxplots of the distributions of payment, grouped by `urbanByRegions`. It doesn't show any particularly obvious patterns.
 
-Even though regions in the whole and urbanization levels don't seem to have overall differences, it looks like individual urban-region groups vary some. The "rural and urban clusters" in the northeast region pay the least for their healthcare, though they pay for a relatively high percentage of their treatments. It also looks like the only-urban northeast, only-urban west, rural urban clusters west, and mixed west regions pay the least in percentage of their healthcare. I suppose that could mean that western states tend to cover more of people's healthcare, if it's a significant difference. We'll find this out in the next section.
+What I can tell is that the areas of "rural and urban clusters" in the northeast region pay the least for their healthcare, though they pay for a relatively high percentage of their treatments. It also looks like the only-urban northeast, only-urban west, rural urban clusters west, and mixed west regions pay the least in percentage of their healthcare. I suppose that could mean that western states tend to cover more of people's healthcare, if it's a significant difference. We'll find this out in the next section.
 
 ##4. Inference
 
@@ -240,11 +210,17 @@ for(i in 1:numPairs) {
     drg <- c(drg, diagnosis)
     v1 <- dfRegion1$PatientPays[dfRegion1$DRG.Definition==diagnosis]
     v2 <- dfRegion2$PatientPays[dfRegion2$DRG.Definition==diagnosis]
-    ptest <- permutation.test(v1, v2, FUN=function(x,y){abs(mean(x)-mean(y))}, 1000)
+    ptest <- permutation.test(v1, v2, FUN=function(x,y){abs(mean(x)-mean(y))}, 10)
     p <- c(p, ptest$p.value)
     
     #PatientPays confidence intervals, bonferroni corrected
-    ci <- doBoot(medicareData[medicareData$DRG.Definition==diagnosis,], statistic=getDiff, r=1000, payment="PatientPays", location1=urbanRegionPairs[1, i], location2=urbanRegionPairs[2, i], confLevel = .95/numPairs)
+    ci <- doBoot(medicareData[medicareData$DRG.Definition==diagnosis,],
+                 statistic=getDiff,
+                 r=10,
+                 payment="PatientPays",
+                 location1=urbanRegionPairs[1, i],
+                 location2=urbanRegionPairs[2, i],
+                 confLevel = .95/numPairs)
     ci.lower <- c(ci.lower, ci$lower)
     ci.upper <- c(ci.upper, ci$upper)
     ci.est <- c(ci.est, ci$estimate)
@@ -254,11 +230,17 @@ for(i in 1:numPairs) {
     drgPct <- c(drgPct, diagnosis)
     v1Pct <- dfRegion1$PctPatientPays[dfRegion1$DRG.Definition==diagnosis]
     v2Pct <- dfRegion2$PctPatientPays[dfRegion2$DRG.Definition==diagnosis]
-    ptestPct <- permutation.test(v1Pct, v2Pct, FUN=function(x,y){abs(mean(x)-mean(y))}, 1000)
+    ptestPct <- permutation.test(v1Pct, v2Pct, FUN=function(x,y){abs(mean(x)-mean(y))}, 10)
     pPct <- c(pPct, ptestPct$p.value)
     
     #PctPatientPays confidence intervals, bonferroni corrected
-    ciPct <- doBoot(medicareData[medicareData$DRG.Definition==diagnosis,], statistic=getDiff, r=1000, payment="PctPatientPays", location1=urbanRegionPairs[1, i], location2=urbanRegionPairs[2, i], confLevel = .95/numPairs)
+    ciPct <- doBoot(medicareData[medicareData$DRG.Definition==diagnosis,],
+                    statistic=getDiff, 
+                    r=10,
+                    payment="PctPatientPays",
+                    location1=urbanRegionPairs[1, i],
+                    location2=urbanRegionPairs[2, i],
+                    confLevel = .95/numPairs)
     ci.lowerPct <- c(ci.lowerPct, ciPct$lower)
     ci.upperPct <- c(ci.upperPct, ciPct$upper)
     ci.estPct <- c(ci.estPct, ciPct$estimate)
@@ -273,24 +255,42 @@ resultsDF <- data.frame(drg, p, ci.lower, ci.upper, ci.est, ur1, ur2)
 resultsDFPct <- data.frame(drgPct, pPct, ci.lowerPct, ci.upperPct, ci.estPct, ur1, ur2)
 
 #PatientPays plots
+par(mfrow=c(2,2))
 for(diagnosis in diagnoses){
   #Plot p-values
-  plot(resultsDF$p[resultsDF$drg==diagnosis], ylim=c(0, .1), main=paste("P-values for", diagnosis), xlab="urban Region Pairs", ylab="P Values", xaxt="n")
+  plot(resultsDF$p[resultsDF$drg==diagnosis], 
+       ylim=c(0, .1), 
+       main=paste("P-values for", diagnosis),
+       xlab="urban Region Pairs",
+       ylab="P Values",
+       xaxt="n")
   abline(h=.05, lty=2)
 
   #Plot Confidence Intervals
-  plotCI(x=1:nrow(resultsDF[resultsDF$drg==diagnosis,]), resultsDF$ci.est[resultsDF$drg==diagnosis], ui=resultsDF$ci.upper[resultsDF$drg==diagnosis], li=resultsDF$ci.lower[resultsDF$drg==diagnosis], main=paste("CI plots for", diagnosis), xlab="Urban Region Pairs", ylab="Difference", xaxt="n")
+  plotCI(x=1:nrow(resultsDF[resultsDF$drg==diagnosis,]),
+         resultsDF$ci.est[resultsDF$drg==diagnosis],
+         ui=resultsDF$ci.upper[resultsDF$drg==diagnosis],
+         li=resultsDF$ci.lower[resultsDF$drg==diagnosis],
+         main=paste("CI plots for", diagnosis),
+         xlab="Urban Region Pairs", ylab="Difference", xaxt="n")
   abline(h = 0, lty = 2)
 }
 
 #PctPatientPays plots
 for(diagnosis in diagnoses){
   #Plot p-values
-  plot(resultsDFPct$pPct[resultsDFPct$drgPct==diagnosis], ylim=c(0, .1), main=paste("P-values for Percent Paid for", diagnosis), xlab="urban Region Pairs", ylab="P Values", xaxt="n")
+  plot(resultsDFPct$pPct[resultsDFPct$drgPct==diagnosis],
+       ylim=c(0, .1), main=paste("P-values for Percent Paid for", diagnosis),
+       xlab="urban Region Pairs", ylab="P Values", xaxt="n")
   abline(h=.05, lty=2)
 
   #Plot Confidence Intervals
-  plotCI(x=1:nrow(resultsDFPct[resultsDFPct$drgPct==diagnosis,]), resultsDFPct$ci.estPct[resultsDFPct$drgPct==diagnosis], ui=resultsDFPct$ci.upperPct[resultsDFPct$drgPct==diagnosis], li=resultsDFPct$ci.lowerPct[resultsDFPct$drgPct==diagnosis], main=paste("CI plots for Percent Paid for", diagnosis), xlab="Urban Region Pairs", ylab="Difference", xaxt="n")
+  plotCI(x=1:nrow(resultsDFPct[resultsDFPct$drgPct==diagnosis,]),
+         resultsDFPct$ci.estPct[resultsDFPct$drgPct==diagnosis],
+         ui=resultsDFPct$ci.upperPct[resultsDFPct$drgPct==diagnosis],
+         li=resultsDFPct$ci.lowerPct[resultsDFPct$drgPct==diagnosis],
+         main=paste("CI plots for Percent Paid for", diagnosis), 
+         xlab="Urban Region Pairs", ylab="Difference", xaxt="n")
   abline(h = 0, lty = 2)
 }
 
@@ -298,13 +298,15 @@ significant <- resultsDF %>%
   filter(p < .05)
 significantPct <- resultsDFPct %>%
   filter(pPct < .05)
-print(significant)
-print(significantPct)
+print(head(significant))
+print(head(significantPct))
 
 ```
 
 
-**Hypothesis Testing** Is there a significant difference between the price paid in urban western regions vs price paid in urban northeastern regions? What about each of the other pairs of regions?
+**Hypothesis Testing** 
+
+Is there a significant difference between the price paid in urban western regions vs price paid in urban northeastern regions? What about each of the other pairs of regions?
 
 I would do hypothesis testing for all the pairs. I'll use their difference in means as a statistic to see if there's a difference. Since the distribution of the data is non-normal, I'll use a permutation test instead of a parametric test.
 
@@ -313,11 +315,10 @@ I would do hypothesis testing for all the pairs. I'll use their difference in me
 
 So, for each pair of `urbanbyregions`, I can see if there's a significant difference between their means. I would keep all the p-value results from my tests and check out at the end which pairs have a significant difference. But it's possible that they were counted significant just by chance, so I'll do a bonferroni correction to adjust my p-values for good measure.
 
+**Confidence Intervals** 
 
-**Confidence Intervals** What do I estimate the actual difference is? I'll find a confidence interval for the difference in payment between the two places. Since the data is very skewed, I shouldn't use a parametric t-test. Instead, I'll use a bootstrap confidence interval.
+What do I estimate the actual difference is? I'll find a confidence interval for the difference in payment between the two places. Since the data is very skewed, I shouldn't use a parametric t-test. Instead, I'll use a bootstrap confidence interval.
 
-**Significance** I printed out the area pairs which had a significant difference in price. I counted `r nrow(significant)` pairs for dollar amount, and `r nrow(significantPct)` for percent. For the actual pay amount, all of these pairs are from COPD and heart failure. But for the percent, there are many more significant pairs. It appears that people across different areas get a different healthcare, but people pay the same actual amount. I think this might mean that the government standardizes the cost of these treatments to make sure that every region actually gets access to the same price treatment. 
+**Significance** 
 
-##5. Comments
-Something that I ran into that made me question my course of action was when I plotted the histograms and there would be 8 separate histograms which all looked about the same. I couldn't compare them well. So I used ggplot to get them all lined up and I also plotted their densities for better visualization. And I also paused at plotting the boxplots after seeing the skewedness of the data, and I wondered if I should boxplot the log transformed data or the regular data. I decided to go with the original data to see the actual prices of the payment, rather than the log-transformed numbers which are less intuitive to understand. I also tried a number of different options to see how closely I should crop the y axis limits so as to visualize the boxplots the most clearly. I never ended up feeling like the boxplots showed me any visible patterns, so I tried doing a `regionByUrban` to see if putting the regions next to each other would bring out any patterns. It didn't. But, it turns out that was because the differences were not all that significant anyways, so that makes sense. I think it would be interesting to check out the regions on their own and see if there are general differences between the price in northwest vs east vs south, etc. I would also want to see if there are general differences based on the urbanality, as in see if overall healthcare in cities are more expensive than in rural areas.
-
+I printed out the area pairs which had a significant difference in price. I counted `r nrow(significant)` pairs for dollar amount, and `r nrow(significantPct)` for percent. For the actual pay amount, all of these pairs are from COPD and heart failure. But for the percent, there are many more significant pairs. It appears that people across different areas get a different healthcare, but people pay the same actual amount. I think this might mean that the government standardizes the cost of these treatments to make sure that every region actually gets access to the same price treatment. 
